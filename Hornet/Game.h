@@ -5,6 +5,8 @@
 #include "HtMouse.h"
 #include "HtAudio.h"
 #include "GameTimer.h"
+#include "World.h"
+#include"GameManager.h"
 
 
 // 17/06/2023
@@ -50,6 +52,9 @@ public:
 
 private:
     GameTimer m_timer;
+    GameManager* m_pGameManager;
+
+
 
 
 

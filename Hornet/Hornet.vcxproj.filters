@@ -118,6 +118,15 @@
     <ClCompile Include="TileLayer.cpp">
       <Filter>Layers</Filter>
     </ClCompile>
+    <ClCompile Include="Ogre.cpp">
+      <Filter>Game\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="World.cpp">
+      <Filter>Game\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GameManager.cpp">
+      <Filter>Game\Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="HtAudio.h">
@@ -198,5 +207,17 @@
     <ClInclude Include="TileLayer.h">
       <Filter>Layers</Filter>
     </ClInclude>
+    <ClInclude Include="Ogre.h">
+      <Filter>Game\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="World.h">
+      <Filter>Game\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GameManager.h">
+      <Filter>Game\Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="TMXParser.cbp" />
   </ItemGroup>
 </Project>

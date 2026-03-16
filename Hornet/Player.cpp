@@ -4,17 +4,19 @@
 #include "iostream"
 #include "Arrow.h"
 #include "ObjectManager.h"
+#include "World.h"
 
 
 double const ARROWSPEED = 400;
 
 
-Player::Player(): GameObject(ObjectType::ROCK)
+Player::Player(): GameObject(ObjectType::PLAYER)
 {
 }
 
 void Player::Update(double frametime)
 {
+
     m_collisionshape.PlaceAt(m_position, 85);
     m_idleTimer += 1 * frametime;
     m_arrowCD = m_arrowCD - 1 * frametime;
@@ -27,7 +29,7 @@ void Player::Update(double frametime)
     {
         m_IdleCount += 4 * frametime;
         m_imageNumber = m_IdleCount;
-        if (m_IdleCount > 7) {
+        if (m_IdleCount > 5) {
             m_IdleCount = 0;
         }
 
@@ -169,12 +171,18 @@ void Player::Update(double frametime)
         m_aTimer = 29;
         m_Hattacking = false;
     }
+
+    if (m_imageNumber < 0) m_imageNumber = 0;
+    if (m_imageNumber > 34) m_imageNumber = 34;
+
+    Vector2D normal = m_PWorld->CollisionNormal(m_collisionshape);
+    m_position += normal * 10;
 }
     
 
 
 
-void Player::Initialise(Vector2D startPos, DelayedGrat* PGrat)
+void Player::Initialise(Vector2D startPos, DelayedGrat* PGrat, World* PWorld)
 {
    // Idle Animation
     LoadImage("assets/Soldier-Idle(1).png");
@@ -241,10 +249,14 @@ void Player::Initialise(Vector2D startPos, DelayedGrat* PGrat)
     m_Lattacking = false;
     m_Aattacking = false;
     m_PGrat = PGrat;
+    m_PWorld = PWorld;
+
 }
 
 void Player::ProcessCollision(GameObject& other)
 {
+
+ 
 }
 
 IShape2D& Player::GetCollisionShape()
@@ -300,4 +312,9 @@ bool Player::LPressedFlag()
     }
     m_LPressed = false;
     return false;
+}
+
+Vector2D Player::GetVelocity()
+{
+    return m_velocity;
 }

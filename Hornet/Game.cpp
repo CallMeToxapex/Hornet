@@ -1,85 +1,63 @@
+
+
 #include "Game.h"
 #include "HtCamera.h"
 #include "ObjectManager.h"
 #include "Player.h"
 #include "DelayedGrat.h"
-
+#include "GameManager.h"
+#include "Ogre.h"
 void Game::StartOfProgram()
 {
-
-
-
-    // This makes the operating system's mouse pointer invisible
-    // It's usually best to use your own instead.
     HtMouse::instance.SetPointerVisiblity(false);
 }
 
-// Use this function to intialise your game objects and load any assets
 void Game::StartOfGame()
-{    
+{
+
     
+    
+    m_pGameManager = new GameManager();
+    m_pGameManager->Initialise();
+    ObjectManager::instance.AddItem(m_pGameManager);
+
     DelayedGrat* pDelayedGrat = new DelayedGrat();
-    pDelayedGrat->Initialise(Vector2D(300,0));
+    pDelayedGrat->Initialise(Vector2D(300, 0));
     ObjectManager::instance.AddItem(pDelayedGrat);
 
     Player* pPlayer = new Player();
-    pPlayer->Initialise(Vector2D(0, 0), pDelayedGrat);
+    pPlayer->Initialise(Vector2D(0, 0), pDelayedGrat, m_pGameManager->GetWorld());
     ObjectManager::instance.AddItem(pPlayer);
-    
-    
+
+    Ogre* pOgre = new Ogre();
+    pOgre->Initialise(m_pGameManager->GetWorld());
+    pOgre->setPlayer(pPlayer);  
+    ObjectManager::instance.AddItem(pOgre);
 }
 
-// Function runs each frame.
-// "frametime" is the time in seconds since the last call (delta time)
 void Game::Update(double frametime)
 {
-    // In the space below, you can write code to create a game the hard way.
-    // To start with, we will use this area, but later will use game objects.
-
-
-
-
-    // The code below runs the managed part of the game engine
-    // Best to leave it alone
+    // All tiles are managed by ObjectManager, so they render automatically
     ObjectManager::instance.UpdateAll(frametime);
     ObjectManager::instance.ProcessCollisions();
     ObjectManager::instance.RenderAll();
+    
+
 #ifdef _DEBUG
     ObjectManager::instance.CycleDebugObject();
     ObjectManager::instance.RenderDebug();
 #endif
-    ObjectManager::instance.DeleteInactiveItems();
 
-    // Draws all graphics to the screen. Best not to remove this line.
+    ObjectManager::instance.DeleteInactiveItems();
     HtGraphics::instance.Present();
 }
 
-// Function runs when the user pauses the program.
-// You may want to stop sound effects.
-void Game::OnSuspend()
-{
+void Game::OnSuspend() {}
+void Game::OnResume() {}
 
-}
-
-
-// This function runs when the user resumes the game from pause
-// You can start sound effects if needed, but it is usually
-// best to just let the game create new sounds if needed.
-void Game::OnResume()
-{
-
-}
-
-// You can use this to clear up any memory, if needed
 void Game::EndOfGame()
 {
-
-
-
-    //This line automatically deletes all managed objects
     ObjectManager::instance.DeleteAllObjects();
 }
 
-void Game::EndOfProgram()
-{
-}
+void Game::EndOfProgram() {}
