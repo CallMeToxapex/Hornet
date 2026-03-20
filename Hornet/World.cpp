@@ -5,15 +5,58 @@ World::World() : GameObject(ObjectType::WALL)
 {
 }
 
+//void World::Setup()
+//    {
+//    buildings.clear();
+//    Rectangle2D box;
+//
+//    // Edge bars
+//    box.PlaceAt(830, -1400, 820, 1400);
+//    buildings.push_back(box);
+//    box.PlaceAt(-820, -1400, -830, 1400);
+//    buildings.push_back(box);
+//
+//    // Centre boxes
+//    box.PlaceAt(470, -200, 430, 200);
+//    buildings.push_back(box);
+//    box.PlaceAt(-430, -200, -470, 200);
+//    buildings.push_back(box);
+//    box.PlaceAt(200, -370, -200, -330);
+//    buildings.push_back(box);
+//    box.PlaceAt(200, 330, -200, 370);
+//    buildings.push_back(box);
+//
+//    // L-shape
+//    box.PlaceAt(200, 975, -450, 1000);
+//    buildings.push_back(box);
+//    box.PlaceAt(-450, 725, -475, 1000);
+//    buildings.push_back(box);
+//    box.PlaceAt(450, -1000, -200, -975);
+//    buildings.push_back(box);
+//    box.PlaceAt(475, -1000, 450, -725);
+//    buildings.push_back(box);
+//
+//    // Last lines
+//    box.PlaceAt(462, 700, 438, 1400);
+//    buildings.push_back(box);
+//    box.PlaceAt(-438, -1400, -462, -700);
+//    buildings.push_back(box);
+//    }
+
 void World::Setup()
-    {
+{
     buildings.clear();
     Rectangle2D box;
 
-    // Edge bars
-    box.PlaceAt(830, -1400, 820, 1400);
+    // Edge bars (top and bottom)
+    box.PlaceAt(830, -1500, 820, 1500);
     buildings.push_back(box);
-    box.PlaceAt(-820, -1400, -830, 1400);
+    box.PlaceAt(-820, -1500, -830, 1500);
+    buildings.push_back(box);
+    // Left and right edges
+    box.PlaceAt(830, -1500, -830, -1490);
+    buildings.push_back(box);
+    box.PlaceAt(830, 1490, -830, 1500);
     buildings.push_back(box);
 
     // Centre boxes
@@ -37,12 +80,11 @@ void World::Setup()
     buildings.push_back(box);
 
     // Last lines
-    box.PlaceAt(462, 700, 438, 1400);
+    box.PlaceAt(462, 700, 438, 1500);
     buildings.push_back(box);
-    box.PlaceAt(-438, -1400, -462, -700);
+    box.PlaceAt(-438, -1500, -462, -700);
     buildings.push_back(box);
-    }
-
+}
 
 void World::Draw() const
 {

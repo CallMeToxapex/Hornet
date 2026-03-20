@@ -7,7 +7,15 @@ DelayedGrat::DelayedGrat() : GameObject(ObjectType::DISPLAY)
 
  
 void DelayedGrat::Update(double frametime)
-{
+{ 
+    std::string timeText = "Time: " + std::to_string(m_time);
+    std::string scoreText = "Score: " + std::to_string(m_PlayerScore);
+
+
+    HtGraphics::instance.WriteTextAligned(1400, 950, timeText, HtGraphics::WHITE, 1, 1.0);
+    HtGraphics::instance.WriteTextAligned(1400, 900, scoreText, HtGraphics::WHITE, 1, 1.0);
+
+    m_time += 1 * frametime;
     m_GratTimer += 1 * frametime;
     if (m_GratTimer > 10 && m_Movement == false)
     {
@@ -27,13 +35,36 @@ void DelayedGrat::Update(double frametime)
         std::cout << "Arrow set to true" << std::endl;
 
     }
+
+    if (m_GratTimer >= 25 && m_Block == false) {
+        m_Block = true;
+        std::cout << "Block set to true" << std::endl;
+    }
+
+    if (m_PlayerScore >= 300 && m_Dash == false) {
+        m_Dash = true;
+        std::cout << "Dash set to true" << std::endl;
+    }
 }
 void DelayedGrat::Initialise(Vector2D startpos)
 {
     m_GratTimer = 0;
     startpos = Vector2D(300, 300);
+    m_time = 0;
+    m_PlayerScore = 0;
 
 }
 void DelayedGrat::Render()
 {
+}
+
+void DelayedGrat::addScore(int points)
+{
+    m_PlayerScore += points;
+
+}
+
+int DelayedGrat::getScore()
+{
+    return m_PlayerScore;
 }

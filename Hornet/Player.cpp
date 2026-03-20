@@ -5,6 +5,7 @@
 #include "Arrow.h"
 #include "ObjectManager.h"
 #include "World.h"
+#include "Ogre.h"
 
 
 double const ARROWSPEED = 400;
@@ -21,8 +22,23 @@ void Player::Update(double frametime)
     m_idleTimer += 1 * frametime;
     m_arrowCD = m_arrowCD - 1 * frametime;
 
-    if (NPressed()) {}
+    if (m_Lattacking|| m_Hattacking)
+    {
+        Vector2D attackPos = m_flipped ? m_position + Vector2D(-100, 0) : m_position + Vector2D(100, 0);
+        m_collisionshape.PlaceAt(attackPos, 150);
+    }
+    else
+    {
+        m_collisionshape.PlaceAt(m_position, 85);
+    }
 
+    if (m_Blocktime >= 4) {
+        m_Blocktime = 4;
+    }
+
+    if (NPressed()) {}
+    if (BPressed()) {}
+    if (BPressedFlag()) {}
 
 
     if (m_idleTimer > 1)
@@ -38,7 +54,8 @@ void Player::Update(double frametime)
     if (m_PGrat->m_Movement) {
 
         if (HtKeyboard::instance.KeyPressed(SDL_SCANCODE_D)) {
-
+            m_flipped = false;
+            m_lastDirection = Vector2D(1, 0);
             m_position += m_Xmovement * frametime;
             m_idleTimer = 0;
             m_imageNumber = m_WalkTimer;
@@ -59,6 +76,8 @@ void Player::Update(double frametime)
 
 
     if ((HtKeyboard::instance.KeyPressed(SDL_SCANCODE_A))) {
+        m_flipped = true;
+        m_lastDirection = Vector2D(-1, 0);
         m_position -= m_Xmovement * frametime;
         m_idleTimer = 0;
         m_imageNumber = m_WalkTimer;
@@ -75,6 +94,8 @@ void Player::Update(double frametime)
     }
 
     if ((HtKeyboard::instance.KeyPressed(SDL_SCANCODE_W))) {
+        m_lastDirection = Vector2D(0, 1);
+
         m_position += m_Ymovement * frametime;
         m_idleTimer = 0;
         m_imageNumber = m_WalkTimer;
@@ -91,6 +112,8 @@ void Player::Update(double frametime)
     }
 
     if ((HtKeyboard::instance.KeyPressed(SDL_SCANCODE_S))) {
+        m_lastDirection = Vector2D(0, -1);
+
         m_position -= m_Ymovement * frametime;
         m_idleTimer = 0;
         m_imageNumber = m_WalkTimer;
@@ -103,6 +126,28 @@ void Player::Update(double frametime)
 
         }
 
+    }
+
+    if (HtKeyboard::instance.KeyPressed(SDL_SCANCODE_SPACE) && m_PGrat->m_Dash && m_DashCD > 6)
+    {
+        m_DashCD = 0;
+        m_dashing = true;
+    }
+
+    if (m_dashing)
+    {
+        m_position += m_lastDirection * m_dashSpeed * frametime;
+        m_dashTimer -= frametime;
+
+        if (m_dashTimer <= 0)
+        {
+            m_dashing = false;
+        }
+    }
+
+    if (!m_dashing) {
+        m_dashTimer = 0.2;
+        m_DashCD += 1 * frametime;
     }
 
 
@@ -146,13 +191,39 @@ void Player::Update(double frametime)
         m_imageNumber = m_aTimer;
         m_aTimer += 5 * frametime;
         m_imageNumber = (int)m_aTimer;
+
+
     }
     if (m_aTimer > 21 && m_Lattacking)
     {
         m_aTimer = 15;
         m_Lattacking = false;
+        m_Hashit = false;
+
     }
 
+
+
+    if (m_PGrat->m_Block && m_Blocktime >= 0 &&  BPressedToggle()){    
+        m_blocking = true;
+        m_idleTimer = 0;
+
+    }
+
+    if (m_blocking) {
+        m_Blocktime -= 1 * frametime;
+        HtGraphics::instance.DrawAt(m_position, m_Shield, 0.09 * 0.5, m_angle, m_transparency);
+
+    }
+
+
+
+    if (!BPressedToggle() || m_Blocktime <= 0) {
+        m_blocking = false;
+        B_Toggle = false;
+        m_Blocktime += 0.5 * frametime;
+
+    }
 
     if (HtKeyboard::instance.KeyPressed(SDL_SCANCODE_M))
     {
@@ -170,6 +241,7 @@ void Player::Update(double frametime)
     {
         m_aTimer = 29;
         m_Hattacking = false;
+        m_Hashit = false;
     }
 
     if (m_imageNumber < 0) m_imageNumber = 0;
@@ -180,7 +252,13 @@ void Player::Update(double frametime)
 }
     
 
-
+void Player::Render()
+{
+    if (m_imageNumber >= 0 && m_imageNumber < (int)m_images.size())
+    {
+        HtGraphics::instance.DrawAt(m_position, m_images[m_imageNumber], m_scale, m_angle, m_transparency, m_flipped);
+    }
+}
 
 void Player::Initialise(Vector2D startPos, DelayedGrat* PGrat, World* PWorld)
 {
@@ -235,7 +313,12 @@ void Player::Initialise(Vector2D startPos, DelayedGrat* PGrat, World* PWorld)
 
 
 
+
+
+
     SetCollidable();
+    m_Hashit = false;
+    m_flipped = false;
     m_scale = 4.0;
     m_collisionshape.PlaceAt(m_position, 1);
     m_WalkTimer = 6;
@@ -248,15 +331,49 @@ void Player::Initialise(Vector2D startPos, DelayedGrat* PGrat, World* PWorld)
     m_aTimer = 21;
     m_Lattacking = false;
     m_Aattacking = false;
+    m_Blocktime = 2;
     m_PGrat = PGrat;
     m_PWorld = PWorld;
+    m_Shield = HtGraphics::instance.LoadPicture("assets/Shield.png");
 
+    m_dashing = false;
+    m_dashTimer = 0;
+    m_dashSpeed = 600;
+    m_DashCD = 6;
+
+
+    
 }
 
 void Player::ProcessCollision(GameObject& other)
 {
+    if (other.GetType() == ObjectType::OGRE && m_Lattacking && !m_Hashit)
+    {
+        Vector2D ogrePos = other.GetPosition();
+        bool ogreToTheRight = ogrePos.XValue > m_position.XValue;
+        bool ogreToTheLeft = ogrePos.XValue < m_position.XValue;
 
- 
+        if ((!m_flipped && ogreToTheRight) || (m_flipped && ogreToTheLeft))
+        {
+            Ogre* pOgre = static_cast<Ogre*>(&other);
+            pOgre->TakeDamage(15);
+            m_Hashit = true;
+        }
+    }
+
+    if (other.GetType() == ObjectType::OGRE && m_Hattacking && !m_Hashit)
+    {
+        Vector2D ogrePos = other.GetPosition();
+        bool ogreToTheRight = ogrePos.XValue > m_position.XValue;
+        bool ogreToTheLeft = ogrePos.XValue < m_position.XValue;
+
+        if ((!m_flipped && ogreToTheRight) || (m_flipped && ogreToTheLeft))
+        {
+            Ogre* pOgre = static_cast<Ogre*>(&other);
+            pOgre->TakeDamage(25);
+            m_Hashit = true;
+        }
+    }
 }
 
 IShape2D& Player::GetCollisionShape()
@@ -314,7 +431,39 @@ bool Player::LPressedFlag()
     return false;
 }
 
+bool Player::BPressed()
+{
+    return HtKeyboard::instance.KeyPressed(SDL_SCANCODE_B);
+
+}
+
+bool Player::BPressedFlag()
+{
+
+    if (BPressed()) {
+
+        if (!m_BPressed) {
+            B_Toggle = !B_Toggle;
+            m_BPressed = true;
+            return true;
+        }
+        else {
+            if (m_BPressed == true) {
+                return false;
+            }
+        }
+    }
+    m_BPressed = false;
+    return false;
+}
+
+bool Player::BPressedToggle()
+{
+    return B_Toggle;
+}
+
 Vector2D Player::GetVelocity()
 {
     return m_velocity;
 }
+

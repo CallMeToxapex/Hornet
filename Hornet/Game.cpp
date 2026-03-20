@@ -30,9 +30,11 @@ void Game::StartOfGame()
     ObjectManager::instance.AddItem(pPlayer);
 
     Ogre* pOgre = new Ogre();
-    pOgre->Initialise(m_pGameManager->GetWorld());
+    pOgre->Initialise(m_pGameManager->GetWorld(), Vector2D(0,0));
     pOgre->setPlayer(pPlayer);  
     ObjectManager::instance.AddItem(pOgre);
+
+
 }
 
 void Game::Update(double frametime)
