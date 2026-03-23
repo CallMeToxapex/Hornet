@@ -18,41 +18,62 @@ void Ogre::Update(double frametime)
 {
     Instructions inst = GetInstructions();
 
+    m_AttackCD -= 1 * frametime;
 
-    m_Velocity += inst.acceleration * frametime;
-    if (m_Velocity.XValue != 0 && !m_busy) {
-        m_imageNumber = m_Walktimer;
+    Rectangle2D m_attackHitBox;
 
-        if (m_Walktimer < 14) {
-            m_Walktimer += 5 * frametime;
-        }
-        else
-        {
-            m_Walktimer = 6;
-
-        }
+    if (m_flipped) {
+        m_attackHitBox.PlaceAt(m_position + Vector2D(-80, -50), m_position + Vector2D(0, 50));
+    }
+    else
+    {
+        m_attackHitBox.PlaceAt(m_position + Vector2D(0, -50), m_position + Vector2D(80, 50));
 
     }
 
-    if (m_BHurt) {
-        m_imageNumber = m_Hurt;
-        m_Hurt += 3 * frametime;
-        m_busy = true;
 
-        if (m_Hurt > 18) {
+    if (m_attackHitBox.Intersects(m_Pplayer->GetCollisionShape())) {
+        Attack();
+    }
+
+    if (!m_busy) {
+        m_position += m_Velocity * frametime;
+        m_Velocity += inst.acceleration * frametime;
+        if (m_Velocity.XValue != 0) {
+            m_imageNumber = m_Walktimer;
+            if (m_Walktimer < 14) {
+                m_Walktimer += 5 * frametime;
+            }
+            else {
+                m_Walktimer = 6;
+            }
+        }
+    }
+    else if (m_BHurt) {
+        m_Velocity = Vector2D(0, 0); 
+        m_imageNumber = m_HurtA;
+        m_HurtA += 3 * frametime;
+
+        if (m_HurtA >= 18) {
             m_busy = false;
-            m_Hurt = 15;
+            m_HurtA = 15;
             m_BHurt = false;
         }
     }
+    else if (m_Attacking) {
+        m_Velocity = Vector2D(0, 0); 
+        m_imageNumber = m_AttackA;
+        m_AttackA += 5 * frametime;
 
-    m_position += m_Velocity * frametime;
-
-    if (m_Velocity.XValue <= 0) {
-        m_flipped = true;
-    }
-    else if (m_Velocity.XValue >= 0) {
-        m_flipped = false;
+        if (m_AttackA >= 24) {
+            if (m_attackHitBox.Intersects(m_Pplayer->GetCollisionShape())) {
+                m_Pplayer->TakeDamage();
+            }
+            m_busy = false;
+            m_Attacking = false;
+            m_AttackCD = 2;
+            m_AttackA = 19;
+        }
     }
 
     m_hitbox.PlaceAt(m_position, 25);
@@ -62,9 +83,32 @@ void Ogre::Update(double frametime)
         m_Velocity = Vector2D(0,0);
         Deactivate();
     }
+
+
+    if (m_Velocity.XValue <= 0 && !m_busy) {
+        m_flipped = true;
+    }
+    else if (m_Velocity.XValue >= 0 && !m_busy) {
+        m_flipped = false;
+    }
+
+
+    HtGraphics::instance.DrawRect(m_attackHitBox, HtGraphics::RED);
+        
+       
 }
 
-void Ogre::Initialise(World* pWorld, Vector2D startpos)
+
+
+void Ogre::Attack() {
+
+    if (m_AttackCD <= 0) {
+        m_busy = true;
+        m_Attacking = true;
+    }
+}
+
+void Ogre::Initialise(World* pWorld, Vector2D startpos, DelayedGrat* pGrat)
 {
     LoadImage("assets/Orc-Idle(1).png"); // ImageNumber_0
     LoadImage("assets/Orc-Idle(2).png");
@@ -84,8 +128,17 @@ void Ogre::Initialise(World* pWorld, Vector2D startpos)
     LoadImage("assets/Orc-Hurt(2).png");
     LoadImage("assets/Orc-Hurt(3).png");
     LoadImage("assets/Orc-Hurt(4).png"); // ImageNuMBER_18
+    LoadImage("assets/Orc-Attack(1).png");// ImageNumber_19
+    LoadImage("assets/Orc-Attack(2).png");
+    LoadImage("assets/Orc-Attack(3).png");
+    LoadImage("assets/Orc-Attack(4).png");
+    LoadImage("assets/Orc-Attack(5).png");
+    LoadImage("assets/Orc-Attack(6).png");// ImageNumber 24
 
 
+
+
+    m_PDelayedGrat = pGrat;
     m_hitbox.PlaceAt(m_position, 25);
     SetCollidable();
     m_scale = 4.0;
@@ -97,11 +150,24 @@ void Ogre::Initialise(World* pWorld, Vector2D startpos)
     m_flipped = false;
     m_Walktimer = 6;
     m_busy = false;
-    m_Hurt = 15;
+    m_HurtA = 15;
+    m_BHurt = false;
+    // Attacking Variables
+    m_AttackCD = 2;
+    m_Attacking = false;
+    m_AttackA = 19;
 }
 
 void Ogre::ProcessCollision(GameObject& other)
 {
+
+    if (other.GetType() == ObjectType::ARROW) {
+        TakeDamage(10);
+        std::cout << "Arrow Hit" << std::endl;
+        std::cout << "Ogre Health Currently: " << m_life << std::endl;
+        
+    }
+
 }
 
 void Ogre::setPos(Vector2D pos)
@@ -112,10 +178,13 @@ void Ogre::setPos(Vector2D pos)
 
 void Ogre::TakeDamage(int damage)
 {
-    m_life -= damage;
-    std::cout << "Damage taken" << std::endl;
-    m_BHurt = true;
+    if (!m_BHurt) {
+        m_life -= damage;
+        std::cout << "Damage taken" << std::endl;
+        m_BHurt = true;
+        m_busy = true;
 
+    }
 }
 
 Instructions Ogre::GetInstructions()

@@ -14,6 +14,7 @@ private:
     double m_ArrowTime;
     Circle2D m_collisionshape;
     double Lifetime;
+    bool m_hasHit;
 
 };
 

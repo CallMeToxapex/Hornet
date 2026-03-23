@@ -30,7 +30,7 @@ void Game::StartOfGame()
     ObjectManager::instance.AddItem(pPlayer);
 
     Ogre* pOgre = new Ogre();
-    pOgre->Initialise(m_pGameManager->GetWorld(), Vector2D(0,0));
+    pOgre->Initialise(m_pGameManager->GetWorld(), Vector2D(0,0), pDelayedGrat);
     pOgre->setPlayer(pPlayer);  
     ObjectManager::instance.AddItem(pOgre);
 

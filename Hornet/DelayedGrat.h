@@ -12,7 +12,7 @@ public:
     int getScore();
     bool m_Movement = true;
     bool m_Attack = true;
-    bool m_Arrow = false;
+    bool m_Arrow = true;
     bool m_Block = false;
     bool m_Dash = false;
 

@@ -1,7 +1,7 @@
 #include "Arrow.h"
 
-const double RADIUS = 3;
-Arrow::Arrow()
+const double RADIUS = 30;
+Arrow::Arrow() : GameObject(ObjectType::ARROW)
 {
 }
 
@@ -11,8 +11,11 @@ void Arrow::Update(double frametime)
         m_ArrowTime -= frametime;
     m_collisionshape.PlaceAt(m_position, RADIUS);
 
+    HtGraphics::instance.FillCircle(m_collisionshape, HtGraphics::RED);
+
     if (m_ArrowTime <= 0)
         Deactivate();
+
 }
 
 void Arrow::Initialise(Vector2D startPos, Vector2D startVel)
@@ -27,6 +30,7 @@ void Arrow::Initialise(Vector2D startPos, Vector2D startVel)
     m_ArrowTime = Lifetime;
     SetCollidable();
     m_collisionshape.PlaceAt(m_position, RADIUS);
+    m_hasHit = false;
 
 
 }
@@ -38,4 +42,7 @@ IShape2D& Arrow::GetCollisionShape()
 
 void Arrow::ProcessCollision(GameObject& other)
 {
+    if (other.GetType() == ObjectType::OGRE) {
+        Deactivate();
+    }
 }

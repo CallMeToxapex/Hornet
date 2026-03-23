@@ -8,7 +8,7 @@
 #include "Ogre.h"
 
 
-double const ARROWSPEED = 400;
+double const ARROWSPEED = 250;
 
 
 Player::Player(): GameObject(ObjectType::PLAYER)
@@ -17,19 +17,21 @@ Player::Player(): GameObject(ObjectType::PLAYER)
 
 void Player::Update(double frametime)
 {
+    //HtGraphics::instance.FillCircle(m_collisionshape, HtGraphics::RED);
 
-    m_collisionshape.PlaceAt(m_position, 85);
+
+    m_collisionshape.PlaceAt(m_position, 50);
     m_idleTimer += 1 * frametime;
     m_arrowCD = m_arrowCD - 1 * frametime;
 
     if (m_Lattacking|| m_Hattacking)
     {
         Vector2D attackPos = m_flipped ? m_position + Vector2D(-100, 0) : m_position + Vector2D(100, 0);
-        m_collisionshape.PlaceAt(attackPos, 150);
+        m_collisionshape.PlaceAt(attackPos, 75);
     }
     else
     {
-        m_collisionshape.PlaceAt(m_position, 85);
+        m_collisionshape.PlaceAt(m_position, 50);
     }
 
     if (m_Blocktime >= 4) {
@@ -174,7 +176,11 @@ void Player::Update(double frametime)
         m_Aattacking = false;
         Arrow* pArrow = new Arrow();
         Vector2D shootDirection;
-        shootDirection.setBearing((m_angle + 90), ARROWSPEED);
+        if (m_flipped) {
+            shootDirection = Vector2D(-ARROWSPEED, 0);
+        }
+        else
+            shootDirection = Vector2D(ARROWSPEED, 0);
         pArrow->Initialise(m_position, shootDirection);
         ObjectManager::instance.AddItem(pArrow);
     }
@@ -236,6 +242,7 @@ void Player::Update(double frametime)
         m_imageNumber = m_aTimer;
         m_aTimer += 5 * frametime;
         m_imageNumber = (int)m_aTimer;
+
     }
     if (m_aTimer > 34 && m_Hattacking)
     {
@@ -245,10 +252,34 @@ void Player::Update(double frametime)
     }
 
     if (m_imageNumber < 0) m_imageNumber = 0;
-    if (m_imageNumber > 34) m_imageNumber = 34;
+    if (m_imageNumber > 38) m_imageNumber = 38;
 
     Vector2D normal = m_PWorld->CollisionNormal(m_collisionshape);
     m_position += normal * 10;
+
+
+    if (m_hurt)
+    {
+        m_aTimer = 35;
+        m_imageNumber = (int)HurtTimer;
+        m_idleTimer = 0;
+
+        if (m_flipped) {
+            m_position += Vector2D(50, 0) * frametime;
+        }
+        else
+        {
+            m_position -= Vector2D(50, 0) * frametime;
+        }
+        HurtTimer += 3 * frametime;
+
+        if (HurtTimer >= 38) {
+            m_hurt = false;
+            HurtTimer = 35;
+        }
+        
+
+    }
 }
     
 
@@ -308,6 +339,13 @@ void Player::Initialise(Vector2D startPos, DelayedGrat* PGrat, World* PWorld)
     LoadImage("assets/Soldier-AttackH(5).png");
     LoadImage("assets/Soldier-AttackH(6).png");//ImageNumber_34
 
+    // Hurt Animations
+    LoadImage("assets/Soldier-Hurt(1).png"); // ImageNumber_35
+    LoadImage("assets/Soldier-Hurt(2).png");
+    LoadImage("assets/Soldier-Hurt(3).png");
+    LoadImage("assets/Soldier-Hurt(4).png"); // ImageNumber_38
+
+
 
 
 
@@ -321,6 +359,7 @@ void Player::Initialise(Vector2D startPos, DelayedGrat* PGrat, World* PWorld)
     m_flipped = false;
     m_scale = 4.0;
     m_collisionshape.PlaceAt(m_position, 1);
+    m_life = 3;
     m_WalkTimer = 6;
     m_aTimer = 15;
     m_Xmovement = Vector2D(150, 0);
@@ -341,6 +380,7 @@ void Player::Initialise(Vector2D startPos, DelayedGrat* PGrat, World* PWorld)
     m_dashSpeed = 600;
     m_DashCD = 6;
 
+    HurtTimer = 35;
 
     
 }
@@ -465,5 +505,14 @@ bool Player::BPressedToggle()
 Vector2D Player::GetVelocity()
 {
     return m_velocity;
+}
+
+void Player::TakeDamage() 
+{
+    m_life -= 1;
+    m_hurt = true;
+    std::cout << "Hurt Hurt Hurt" << std::endl;
+    HurtTimer = 35;
+
 }
 

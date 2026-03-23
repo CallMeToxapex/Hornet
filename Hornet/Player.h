@@ -20,6 +20,7 @@ public:
     bool BPressedFlag();
     bool BPressedToggle();
     Vector2D GetVelocity();
+    void TakeDamage();
 
 
 private: 
@@ -32,6 +33,10 @@ private:
     bool m_flipped;
     Circle2D m_collisionshape;
     bool m_Hashit;
+    int m_life;
+
+    bool m_hurt;
+    double HurtTimer;
 
 
     //Animation Variables

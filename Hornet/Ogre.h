@@ -42,10 +42,11 @@ class Ogre : public GameObject
         Ogre();
         void Render() override;
         void Update(double frametime) override;
-        void Initialise(World* pWorld, Vector2D startpos);
+        void Initialise(World* pWorld, Vector2D startpos, DelayedGrat* pGrat);
         void ProcessCollision(GameObject& other) override;
         void setPos(Vector2D pos);
         void TakeDamage(int damage);
+        void Attack();
         Instructions GetInstructions();
         IShape2D& GetCollisionShape() override;
         Vector2D Seek(Vector2D targetPoint);
@@ -75,8 +76,14 @@ private:
     bool m_flipped;
     double m_Walktimer;
     bool m_busy;
+    
 
-    double m_Hurt;
+    double m_HurtA;
     bool m_BHurt;
+
+    // Attacking Variables
+    double m_AttackCD;
+    bool m_Attacking;
+    double m_AttackA;
 };
 
