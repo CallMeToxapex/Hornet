@@ -15,12 +15,14 @@ public:
     bool m_Arrow = true;
     bool m_Block = false;
     bool m_Dash = false;
-
-
+    int m_PlayerScore;
+    bool m_Heavy = false;
+    bool m_OgreHBuff = false;
+    bool m_OgreABuff = false;
+    bool m_PlayerHBuff = false;
 private:
 
     double m_GratTimer;
-    int m_PlayerScore;
     double m_time;
 
 };

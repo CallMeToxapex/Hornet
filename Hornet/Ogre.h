@@ -5,6 +5,8 @@
 #include <list>
 #include "DelayedGrat.h"
 
+enum class OgreBehaviour {SEEKER, FLEE, BUNKER, WANDERER};
+
 class Graph
 {
    //std::vector<Node> NodeVector;
@@ -26,13 +28,14 @@ public:
    std::list<Edge> edgeList;
    double f, g, h;
    PathNode* pParent;
+   PathNode* pCurrentNode;
    std::list<PathNode*> openList;
    std::list<PathNode*> closedList;
 };
 struct Instructions
 {
-    Vector2D acceleration;  // Desired acceleration. If >MAXACCELERATION, will get clamped
-    Player* pPlayer;        // Pointer to bot to shoot at. If not, will be nullptr.
+    Vector2D acceleration;  
+    Player* pPlayer;       
 };
 
 class Ogre : public GameObject
@@ -42,7 +45,7 @@ class Ogre : public GameObject
         Ogre();
         void Render() override;
         void Update(double frametime) override;
-        void Initialise(World* pWorld, Vector2D startpos, DelayedGrat* pGrat);
+        void Initialise(World* pWorld, Vector2D startpos, DelayedGrat* pGrat, Player* pPlayer);
         void ProcessCollision(GameObject& other) override;
         void setPos(Vector2D pos);
         void TakeDamage(int damage);
@@ -61,6 +64,12 @@ class Ogre : public GameObject
         bool IsInClosedList(PathNode* pNode);
         bool IsInOpenList(PathNode* pNode);
         void setPlayer(Player* player);
+        void FindPath(Vector2D startpoint, Vector2D endpoint);
+        void GenerateRoute(PathNode* startnode, PathNode* endpoint);
+        PathNode* FindBestNode(std::list<PathNode*> &openlist);
+        bool Contain(std::list<PathNode*> &list, PathNode* target );
+        static int s_ogreCount;
+        void SetOgreBehaviour(OgreBehaviour behaviour);
 
 
 
@@ -73,6 +82,10 @@ private:
     DelayedGrat* m_PDelayedGrat;
     World* m_World;
     std::vector<PathNode> nodeList;
+    std::vector<Vector2D> path;
+    OgreBehaviour m_behaviour;
+    bool m_triggered = false;
+
     bool m_flipped;
     double m_Walktimer;
     bool m_busy;

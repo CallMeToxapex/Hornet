@@ -45,7 +45,28 @@ void DelayedGrat::Update(double frametime)
         m_Dash = true;
         std::cout << "Dash set to true" << std::endl;
     }
+   
+    if (m_PlayerScore >= 200 && m_Heavy == false) {
+        m_Heavy = true;
+        std::cout << "Heavy set to true" << std::endl;
+    }
+
+    if (m_GratTimer >= 30 && m_OgreHBuff == false) {
+        m_OgreHBuff = true;
+        std::cout << "Ogre's Health Buffed" << std::endl;
+    }
+    if (m_PlayerScore >= 400 && m_OgreABuff == false) {
+        m_OgreABuff = true;
+        std::cout << "Ogre's Attack Increased" << std::endl;
+    }
+
+    if (m_GratTimer >= 40 && m_PlayerHBuff == false) {
+        m_PlayerHBuff = true;
+        std::cout << "Player's Health is buffed" << std::endl;
+    }
+
 }
+
 void DelayedGrat::Initialise(Vector2D startpos)
 {
     m_GratTimer = 0;

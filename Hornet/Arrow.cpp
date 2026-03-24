@@ -20,7 +20,7 @@ void Arrow::Update(double frametime)
 
 void Arrow::Initialise(Vector2D startPos, Vector2D startVel)
 {
-    Lifetime = 4;
+    Lifetime = 10;
     LoadImage("assets/Arrow.png");
     m_scale = 3;
     m_position = Vector2D(0, 0);

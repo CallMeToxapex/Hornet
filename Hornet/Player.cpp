@@ -8,7 +8,7 @@
 #include "Ogre.h"
 
 
-double const ARROWSPEED = 250;
+double const ARROWSPEED = 350;
 
 
 Player::Player(): GameObject(ObjectType::PLAYER)
@@ -17,22 +17,17 @@ Player::Player(): GameObject(ObjectType::PLAYER)
 
 void Player::Update(double frametime)
 {
-    //HtGraphics::instance.FillCircle(m_collisionshape, HtGraphics::RED);
+    HtGraphics::instance.FillCircle(m_collisionshape, HtGraphics::RED);
+
+    std::string Health = "Health: " + std::to_string(m_life);
+    HtGraphics::instance.WriteTextAligned(-1400, 950, Health, HtGraphics::WHITE, 1, 1.0);
+
 
 
     m_collisionshape.PlaceAt(m_position, 50);
     m_idleTimer += 1 * frametime;
     m_arrowCD = m_arrowCD - 1 * frametime;
 
-    if (m_Lattacking|| m_Hattacking)
-    {
-        Vector2D attackPos = m_flipped ? m_position + Vector2D(-100, 0) : m_position + Vector2D(100, 0);
-        m_collisionshape.PlaceAt(attackPos, 75);
-    }
-    else
-    {
-        m_collisionshape.PlaceAt(m_position, 50);
-    }
 
     if (m_Blocktime >= 4) {
         m_Blocktime = 4;
@@ -161,13 +156,13 @@ void Player::Update(double frametime)
         m_idleTimer = 0;
         m_aTimer = 21;
         m_Aattacking = true;
-        m_arrowCD = 4;
+        m_arrowCD = 3;
 
     }
 
     if (m_Aattacking) {
         m_imageNumber = m_aTimer;
-        m_aTimer += 5 * frametime;
+        m_aTimer += 9 * frametime;
         m_imageNumber = (int)m_aTimer;
     }
 
@@ -195,8 +190,25 @@ void Player::Update(double frametime)
 
     if (m_Lattacking) {
         m_imageNumber = m_aTimer;
-        m_aTimer += 5 * frametime;
+        m_aTimer += 8 * frametime;
         m_imageNumber = (int)m_aTimer;
+        Rectangle2D lightHit;
+
+        if (m_flipped) {
+            lightHit.PlaceAt(m_position + Vector2D(-120, -50), m_position + Vector2D(0, 50));
+        }
+        else
+        {
+            lightHit.PlaceAt(m_position + Vector2D(0, -50), m_position + Vector2D(120, 50));
+        }
+
+        for (Ogre* pOgre : m_ogres)
+        {
+            if (pOgre != nullptr && lightHit.Intersects(pOgre->GetCollisionShape()) && !m_Hashit){
+                pOgre->TakeDamage(15);
+            m_Hashit = true;
+        }
+    }
 
 
     }
@@ -231,7 +243,7 @@ void Player::Update(double frametime)
 
     }
 
-    if (HtKeyboard::instance.KeyPressed(SDL_SCANCODE_M))
+    if (HtKeyboard::instance.KeyPressed(SDL_SCANCODE_M) && m_PGrat->m_Heavy)
     {
         m_Hattacking = true;
         m_idleTimer = 0;
@@ -242,6 +254,23 @@ void Player::Update(double frametime)
         m_imageNumber = m_aTimer;
         m_aTimer += 5 * frametime;
         m_imageNumber = (int)m_aTimer;
+        Rectangle2D lightHit;
+
+        if (m_flipped) {
+            lightHit.PlaceAt(m_position + Vector2D(-120, -50), m_position + Vector2D(0, 50));
+        }
+        else
+        {
+            lightHit.PlaceAt(m_position + Vector2D(0, -50), m_position + Vector2D(120, 50));
+        }
+
+        for (Ogre* pOgre : m_ogres)
+        {
+            if (pOgre != nullptr && lightHit.Intersects(pOgre->GetCollisionShape()) && !m_Hashit) {
+                pOgre->TakeDamage(25);
+                m_Hashit = true;
+            }
+        }
 
     }
     if (m_aTimer > 34 && m_Hattacking)
@@ -256,6 +285,17 @@ void Player::Update(double frametime)
 
     Vector2D normal = m_PWorld->CollisionNormal(m_collisionshape);
     m_position += normal * 10;
+
+
+    if (m_Lattacking) {
+        Rectangle2D debugHit;
+        if (m_flipped)
+            debugHit.PlaceAt(m_position + Vector2D(-120, -50), m_position + Vector2D(0, 50));
+        else
+            debugHit.PlaceAt(m_position + Vector2D(0, -50), m_position + Vector2D(120, 50));
+
+        HtGraphics::instance.DrawRect(debugHit, HtGraphics::RED);
+    }
 
 
     if (m_hurt)
@@ -280,6 +320,10 @@ void Player::Update(double frametime)
         
 
     }
+
+
+
+
 }
     
 
@@ -387,33 +431,6 @@ void Player::Initialise(Vector2D startPos, DelayedGrat* PGrat, World* PWorld)
 
 void Player::ProcessCollision(GameObject& other)
 {
-    if (other.GetType() == ObjectType::OGRE && m_Lattacking && !m_Hashit)
-    {
-        Vector2D ogrePos = other.GetPosition();
-        bool ogreToTheRight = ogrePos.XValue > m_position.XValue;
-        bool ogreToTheLeft = ogrePos.XValue < m_position.XValue;
-
-        if ((!m_flipped && ogreToTheRight) || (m_flipped && ogreToTheLeft))
-        {
-            Ogre* pOgre = static_cast<Ogre*>(&other);
-            pOgre->TakeDamage(15);
-            m_Hashit = true;
-        }
-    }
-
-    if (other.GetType() == ObjectType::OGRE && m_Hattacking && !m_Hashit)
-    {
-        Vector2D ogrePos = other.GetPosition();
-        bool ogreToTheRight = ogrePos.XValue > m_position.XValue;
-        bool ogreToTheLeft = ogrePos.XValue < m_position.XValue;
-
-        if ((!m_flipped && ogreToTheRight) || (m_flipped && ogreToTheLeft))
-        {
-            Ogre* pOgre = static_cast<Ogre*>(&other);
-            pOgre->TakeDamage(25);
-            m_Hashit = true;
-        }
-    }
 }
 
 IShape2D& Player::GetCollisionShape()
@@ -509,10 +526,50 @@ Vector2D Player::GetVelocity()
 
 void Player::TakeDamage() 
 {
+    if (!m_blocking){ 
     m_life -= 1;
     m_hurt = true;
     std::cout << "Hurt Hurt Hurt" << std::endl;
     HurtTimer = 35;
+    }
+    if (!m_blocking && m_PGrat->m_OgreABuff) {
+        m_life -= 2;
+        m_hurt = true;
+        std::cout << "Really Hurt Hurt" << std::endl;
+        HurtTimer = 35;
+    }
+}
 
+void Player::GainHealth()
+{
+    if (m_PGrat->m_PlayerScore % 150 == 0) {
+        if (m_PGrat->m_PlayerHBuff && m_life < 3) {
+            m_life += 1;
+            std::cout << "Health Gained" << std::endl;
+        }
+
+        if (m_life < 5 && m_PGrat->m_PlayerHBuff) {
+            m_life += 1;
+            std::cout << "Health Gained" << std::endl;
+
+
+        }
+    }
+
+}
+
+void Player::AddOgre(Ogre* ogre)
+{
+    m_ogres.push_back(ogre);
+}
+
+void Player::RemoveOgre(Ogre* ogre)
+{
+    for (int i = 0; i < m_ogres.size(); i++) {
+        if (m_ogres[i] == ogre) {
+            m_ogres.erase(m_ogres.begin() + i);
+                break;
+        }
+    }
 }
 

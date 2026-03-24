@@ -14,6 +14,7 @@ void Game::StartOfProgram()
 
 void Game::StartOfGame()
 {
+    ogrecount = 5;
 
     
     
@@ -29,11 +30,14 @@ void Game::StartOfGame()
     pPlayer->Initialise(Vector2D(0, 0), pDelayedGrat, m_pGameManager->GetWorld());
     ObjectManager::instance.AddItem(pPlayer);
 
-    Ogre* pOgre = new Ogre();
-    pOgre->Initialise(m_pGameManager->GetWorld(), Vector2D(0,0), pDelayedGrat);
-    pOgre->setPlayer(pPlayer);  
-    ObjectManager::instance.AddItem(pOgre);
-
+    for (int i = 0; i < ogrecount; i++) {
+        Ogre* pOgre = new Ogre();
+        pOgre->Initialise(m_pGameManager->GetWorld(), Vector2D(rand() % 1400 - 200, rand() % 1400 - 400), pDelayedGrat,pPlayer);
+        pOgre->SetOgreBehaviour((OgreBehaviour)(rand() % 3));
+        ObjectManager::instance.AddItem(pOgre);
+        pPlayer->AddOgre(pOgre);
+    }
+    
 
 }
 
@@ -44,7 +48,7 @@ void Game::Update(double frametime)
     ObjectManager::instance.ProcessCollisions();
     ObjectManager::instance.RenderAll();
     
-
+    
 #ifdef _DEBUG
     ObjectManager::instance.CycleDebugObject();
     ObjectManager::instance.RenderDebug();

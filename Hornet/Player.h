@@ -2,6 +2,10 @@
 #include "GameObject.h"
 #include "DelayedGrat.h"
 #include "World.h"
+
+
+class Ogre;
+
 class Player :public GameObject
 {
 public:
@@ -21,6 +25,9 @@ public:
     bool BPressedToggle();
     Vector2D GetVelocity();
     void TakeDamage();
+    void GainHealth();
+    void AddOgre(Ogre* ogre);
+    void RemoveOgre(Ogre* ogre);
 
 
 private: 
@@ -34,7 +41,7 @@ private:
     Circle2D m_collisionshape;
     bool m_Hashit;
     int m_life;
-
+    std::vector<Ogre*> m_ogres;
     bool m_hurt;
     double HurtTimer;
 

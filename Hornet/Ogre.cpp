@@ -1,9 +1,13 @@
 #include "Ogre.h"
 #include <iostream>
 #include "HtGraphics.h"
+#include "ObjectManager.h"
+
+int Ogre::s_ogreCount = 0;
 
 Ogre::Ogre() : GameObject(ObjectType::OGRE)
 {
+    m_Pplayer = nullptr;
 }
 
 void Ogre::Render()
@@ -16,6 +20,9 @@ void Ogre::Render()
 
 void Ogre::Update(double frametime)
 {
+
+    if (m_Pplayer == nullptr)
+        return;
     Instructions inst = GetInstructions();
 
     m_AttackCD -= 1 * frametime;
@@ -23,11 +30,11 @@ void Ogre::Update(double frametime)
     Rectangle2D m_attackHitBox;
 
     if (m_flipped) {
-        m_attackHitBox.PlaceAt(m_position + Vector2D(-80, -50), m_position + Vector2D(0, 50));
+        m_attackHitBox.PlaceAt(m_position + Vector2D(-50, -50), m_position + Vector2D(0, 50));
     }
     else
     {
-        m_attackHitBox.PlaceAt(m_position + Vector2D(0, -50), m_position + Vector2D(80, 50));
+        m_attackHitBox.PlaceAt(m_position + Vector2D(0, -50), m_position + Vector2D(50, 50));
 
     }
 
@@ -81,6 +88,16 @@ void Ogre::Update(double frametime)
     if (m_life <= 0) {
         m_PDelayedGrat->addScore(50);
         m_Velocity = Vector2D(0,0);
+
+        Ogre* pNewOgre = new Ogre();
+        Vector2D spawnPos(rand() % 800 - 400, rand() % 800 - 400);
+        pNewOgre->Initialise(m_World, spawnPos, m_PDelayedGrat, m_Pplayer);
+        pNewOgre->setPlayer(m_Pplayer);
+        ObjectManager::instance.AddItem(pNewOgre);
+
+        m_Pplayer->RemoveOgre(this);
+        m_Pplayer->AddOgre(pNewOgre);
+
         Deactivate();
     }
 
@@ -95,7 +112,11 @@ void Ogre::Update(double frametime)
 
     HtGraphics::instance.DrawRect(m_attackHitBox, HtGraphics::RED);
         
-       
+   /* if (m_PDelayedGrat->m_OgreHBuff) {
+        m_life = 65;
+    }*/
+    Vector2D normal = m_World->CollisionNormal(m_hitbox);
+    m_position += normal * 10;
 }
 
 
@@ -108,8 +129,9 @@ void Ogre::Attack() {
     }
 }
 
-void Ogre::Initialise(World* pWorld, Vector2D startpos, DelayedGrat* pGrat)
+void Ogre::Initialise(World* pWorld, Vector2D startpos, DelayedGrat* pGrat, Player* pPlayer)
 {
+    m_Pplayer = pPlayer;
     LoadImage("assets/Orc-Idle(1).png"); // ImageNumber_0
     LoadImage("assets/Orc-Idle(2).png");
     LoadImage("assets/Orc-Idle(3).png");
@@ -142,7 +164,7 @@ void Ogre::Initialise(World* pWorld, Vector2D startpos, DelayedGrat* pGrat)
     m_hitbox.PlaceAt(m_position, 25);
     SetCollidable();
     m_scale = 4.0;
-    m_move = 50;
+    m_move = 75;
     m_life = 50;
     m_World = pWorld;
     m_position = startpos;
@@ -156,6 +178,8 @@ void Ogre::Initialise(World* pWorld, Vector2D startpos, DelayedGrat* pGrat)
     m_AttackCD = 2;
     m_Attacking = false;
     m_AttackA = 19;
+    s_ogreCount++;
+    m_behaviour = OgreBehaviour::SEEKER;
 }
 
 void Ogre::ProcessCollision(GameObject& other)
@@ -181,6 +205,7 @@ void Ogre::TakeDamage(int damage)
     if (!m_BHurt) {
         m_life -= damage;
         std::cout << "Damage taken" << std::endl;
+        std::cout << "Ogre's Healtb: " << m_life << std::endl;
         m_BHurt = true;
         m_busy = true;
 
@@ -195,17 +220,74 @@ Instructions Ogre::GetInstructions()
     // The next few lines might make your life easier, but you can delete them if you want
     Vector2D position = m_Pplayer->GetPosition();
     Vector2D velocity = m_Pplayer->GetVelocity();
-  //  Vector2D acceleration = m_Pplayer->GetAcceleration();
-    //int health = m_pBot->GetHealth();
-    //bool isDead = m_pBot->IsDead();
-    //int holdingFlag = m_pBot->GetHoldingFlag();
-    //int ownNumber = m_pBot->GetNumber();
+    //  Vector2D acceleration = m_Pplayer->GetAcceleration();
+      //int health = m_pBot->GetHealth();
+      //bool isDead = m_pBot->IsDead();
+      //int holdingFlag = m_pBot->GetHoldingFlag();
+      //int ownNumber = m_pBot->GetNumber();
+
+    switch (m_behaviour) {
+    case OgreBehaviour::FLEE:
+        answer.acceleration = Flee(position);
+        break;
+    case OgreBehaviour::SEEKER:
+
+        if (m_World->LineOfSight(m_position, position)) {
+            answer.acceleration = Seek(position);
+        }
+        else {
+            FindPath(m_position, position);
+
+            if (path.size() > 0) {
+                while (path.size() > 1 && m_World->LineOfSight(m_position, path[1])) {
+                    path.erase(path.begin());
+                }
+                answer.acceleration = Seek(path[0]);
+
+                if ((m_position - path[0]).magnitude() < 10) {
+                    path.erase(path.begin());
+                }
+            }
+        }        break;
+    case OgreBehaviour::BUNKER: {
+        double distance = (position - m_position).magnitude();
+
+        if (distance < 100) {
+            m_triggered = true;
+        }
+                if (m_triggered) {
+                    if (m_World->LineOfSight(m_position, position)) {
+                        answer.acceleration = Seek(position) * 2;
+                    }
+                    else {
+                        FindPath(m_position, position);
+
+                        if (path.size() > 0) {
+                            while (path.size() > 1 && m_World->LineOfSight(m_position, path[1])) {
+                                path.erase(path.begin());
+                            }
+                            answer.acceleration = Seek(path[0]) * 2;
+
+                            if ((m_position - path[0]).magnitude() < 10) {
+                                path.erase(path.begin());
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    answer.acceleration = Vector2D(0, 0);
+                    m_Velocity = Vector2D(0, 0);
+                }
+            break;
+        }
+    }
+
+
 
     // And now your code
-    answer.acceleration = Seek(position);
     answer.acceleration += AvoidWalls();
     answer.pPlayer = nullptr;
-  //  answer.pPlayer = theGameState.pBots[1][3];
     DrawNodes();
     return answer;
 }
@@ -251,6 +333,10 @@ Vector2D Ogre::Avoid(Vector2D targetPoint, Vector2D targetVelocity)
     return Vector2D();
 }
 
+void Ogre::SetOgreBehaviour(OgreBehaviour behaviour) {
+    
+    m_behaviour = behaviour;
+}
 Vector2D Ogre::AvoidWalls()
 {
     Circle2D avoidance;
@@ -258,7 +344,7 @@ Vector2D Ogre::AvoidWalls()
 
     if (m_World->Collides(avoidance)) {
         Vector2D normal = m_World->CollisionNormal(avoidance);
-        Vector2D acceleration = normal * 50;
+        Vector2D acceleration = normal * 200;
 
         return acceleration;
     }
@@ -294,12 +380,12 @@ void Ogre::DrawNodes()
     for (PathNode next : nodeList) {
         Circle2D dot;
         dot.PlaceAt(next.position, 10);
-        HtGraphics::instance.FillCircle(dot, HtGraphics::WHITE);
+        //  HtGraphics::instance.FillCircle(dot, HtGraphics::WHITE);
 
         for (Edge nextEdge : next.edgeList) {
             Segment2D Seg;
             Seg.PlaceAt(next.position, nodeList[nextEdge.toIndex].position);
-          //  HtGraphics::instance.DrawSegment(Seg, HtGraphics::CYAN);
+           // HtGraphics::instance.DrawSegment(Seg, HtGraphics::CYAN);
         }
     }
    
@@ -349,3 +435,127 @@ void Ogre::setPlayer(Player* player)
     m_Pplayer = player;
 
 }
+
+void Ogre::FindPath(Vector2D startpoint, Vector2D endpoint)
+{
+    PathNode* pStart = &nodeList[0];
+    double distance = (startpoint - nodeList[0].position).magnitude();
+
+    for (int i = 1; i < nodeList.size(); i++) {
+
+        if ((m_position - nodeList[i].position).magnitude() < distance) {
+            pStart = &nodeList[i];
+            distance = (startpoint - nodeList[i].position).magnitude();
+        }
+    }
+
+
+        PathNode* pEnd = &nodeList[0];
+        double Enddistance = (endpoint - nodeList[0].position).magnitude();
+
+        for (int i = 1; i < nodeList.size(); i++) {
+
+            if ((endpoint - nodeList[i].position).magnitude() < Enddistance) {
+                pEnd = &nodeList[i];
+                Enddistance = (endpoint - nodeList[i].position).magnitude();
+            }
+        }
+
+        path.clear();
+        GenerateRoute(pStart, pEnd);
+        path.push_back(endpoint);
+
+}
+
+void Ogre::GenerateRoute(PathNode* startnode, PathNode* endpoint)
+{
+
+    PathNode* pCurrent = startnode;
+
+    //Clearing Existing data
+    for (int i = 0; i < nodeList.size(); i++) {
+        nodeList[i].f = 0;
+        nodeList[i].g = 0;
+        nodeList[i].pParent = nullptr;
+        nodeList[i].h = (endpoint->position - nodeList[i].position).magnitude();
+
+    }
+    // Creating Open and close list
+
+    std::list<PathNode*> openlist;
+    std::list<PathNode*> closedlist;
+
+    openlist.push_back(pCurrent);
+    while (true) {
+        if (openlist.size() == 0) {
+            break;
+        }
+        pCurrent = FindBestNode(openlist);
+        openlist.remove(pCurrent);
+        closedlist.push_back(pCurrent);
+        if (pCurrent == endpoint) {
+            break;
+        }
+        for (Edge next : pCurrent->edgeList) {
+            PathNode* pNext = &nodeList[next.toIndex];
+            double g = pCurrent->g + next.cost;
+            if (pNext->g == 0 || pNext->g > g) {
+                pNext->g = g;
+                pNext->f = (pNext->g + pNext->h);
+
+            }
+            if (!Contain(openlist, pNext) && !Contain(closedlist, pNext)) {
+                pNext->g = g;
+                pNext->f = (pNext->g + pNext->h);
+                pNext->pParent = pCurrent;
+                openlist.push_back(pNext);
+            }
+            else if (g < pNext->g) {
+                pNext->g = g;
+                pNext->f = (pNext->g + pNext->h);
+                pNext->pParent = pCurrent;
+            }
+
+        }
+    }
+         PathNode* pTrace = endpoint;
+         while (pTrace != startnode && pTrace !=nullptr)
+         {
+             path.push_back(pTrace->position);
+             pTrace = pTrace->pParent;
+         }
+         if (pTrace != nullptr) {
+             path.push_back(startnode->position);
+             std::reverse(path.begin(), path.end());
+         }
+    
+}
+
+
+PathNode* Ogre::FindBestNode(std::list<PathNode*> &openlist)
+{
+    
+    double BestF = 9999;
+    PathNode* index = nullptr;
+
+    for (PathNode* next : openlist) {
+        if (BestF > next->f) {
+            BestF = next->f;
+            index = next;
+        }
+        
+    }
+    return index;
+}
+
+bool Ogre::Contain(std::list<PathNode*>& list, PathNode* Target)
+{ 
+    for (PathNode* next : list) {
+        if (next == Target) {
+            return true;
+        }
+    }
+
+    return false;
+}
+

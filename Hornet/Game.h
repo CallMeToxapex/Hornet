@@ -50,6 +50,7 @@ public:
     // This may well be empty
     void EndOfProgram();
 
+    int ogrecount;
 private:
     GameTimer m_timer;
     GameManager* m_pGameManager;
